@@ -1,207 +1,217 @@
-/* ── Tour Data ──────────────────────────────────────────── */
+/* ── Tour Stops ─────────────────────────────────────────── */
 const STOPS = [
   {
     id: 1,
     title: "Murphy Hall",
     description: "UCLA's main administration building. Home of the Admissions office and campus information kiosks.",
-    lat: 34.07201,
-    lng: -118.44155,
+    lat: 34.07201, lng: -118.44155,
     audio: "audio/01.mp3"
   },
   {
     id: 2,
     title: "Royce Hall",
     description: "One of UCLA's four original buildings, built in 1929. A Romanesque landmark and world-class performing arts venue.",
-    lat: 34.07317,
-    lng: -118.44244,
+    lat: 34.07317, lng: -118.44244,
     audio: "audio/02.mp3"
   },
   {
     id: 3,
     title: "Janss Steps",
-    description: "87 steps connecting upper and lower campus. A beloved campus gathering spot with a sweeping view of Royce Hall.",
-    lat: 34.07236,
-    lng: -118.44197,
+    description: "87 steps connecting upper and lower campus. A beloved gathering spot with a sweeping view of Royce Hall.",
+    lat: 34.07236, lng: -118.44197,
     audio: "audio/03.mp3"
   },
   {
     id: 4,
     title: "Sculpture Gardens",
-    description: "Franklin D. Murphy Sculpture Garden. One of the finest outdoor sculpture collections in the western United States.",
-    lat: 34.07465,
-    lng: -118.44043,
+    description: "Franklin D. Murphy Sculpture Garden — one of the finest outdoor sculpture collections in the western United States.",
+    lat: 34.07465, lng: -118.44043,
     audio: "audio/04.mp3"
   },
   {
     id: 5,
     title: "Inverted Fountain",
-    description: "Water flows down into the earth rather than up. It represents the university drawing knowledge from the world.",
-    lat: 34.07087,
-    lng: -118.44290,
+    description: "Water flows down into the earth rather than up, representing the university drawing knowledge from the world.",
+    lat: 34.07087, lng: -118.44290,
     audio: "audio/05.mp3"
   },
   {
     id: 6,
     title: "Kerckhoff Hall",
-    description: "The original student union building, home to the student government and the Kerckhoff Coffee House.",
-    lat: 34.07152,
-    lng: -118.44215,
+    description: "The original student union building, home to student government and the Kerckhoff Coffee House.",
+    lat: 34.07152, lng: -118.44215,
     audio: "audio/06.mp3"
   },
   {
     id: 7,
     title: "Bruin Plaza",
     description: "The heart of student life on campus. Home of the iconic Bruin Bear statue, a symbol of UCLA pride.",
-    lat: 34.07112,
-    lng: -118.44370,
+    lat: 34.07112, lng: -118.44370,
     audio: "audio/07.mp3"
   },
   {
     id: 8,
     title: "Pauley Pavilion",
     description: "UCLA's premier indoor arena, home to Bruin basketball and volleyball. Seats over 13,000 fans.",
-    lat: 34.07019,
-    lng: -118.44563,
+    lat: 34.07019, lng: -118.44563,
     audio: "audio/08.mp3"
   }
 ];
 
 /* ── State ──────────────────────────────────────────────── */
-let currentStop = 0;
-let map = null;
-let markers = [];
-let userMarker = null;
-let watchId = null;
-let isDragging = false;
+// currentStop: -1 = intro screen, 0-7 = tour stops (index into STOPS array)
+let currentStop = -1;
+let map         = null;
+let markers     = [];
+let userOverlay = null;
+let userDotEl   = null;
+let watchId     = null;
+let isDragging  = false;
+let isSatellite = false;
 
 /* ── DOM refs ───────────────────────────────────────────── */
-const audio       = document.getElementById('tour-audio');
-const playBtn     = document.getElementById('play-btn');
-const playIcon    = document.getElementById('play-icon');
-const pauseIcon   = document.getElementById('pause-icon');
-const prevBtn     = document.getElementById('prev-btn');
-const nextBtn     = document.getElementById('next-btn');
-const stopTitle   = document.getElementById('stop-title');
-const stopDesc    = document.getElementById('stop-description');
-const stopNum     = document.getElementById('current-stop-num');
+const audio         = document.getElementById('tour-audio');
+const playBtn       = document.getElementById('play-btn');
+const playIcon      = document.getElementById('play-icon');
+const pauseIcon     = document.getElementById('pause-icon');
+const prevBtn       = document.getElementById('prev-btn');
+const nextBtn       = document.getElementById('next-btn');
+const stopTitle     = document.getElementById('stop-title');
+const stopDesc      = document.getElementById('stop-description');
+const stopNum       = document.getElementById('current-stop-num');
 const progressFill  = document.getElementById('progress-fill');
 const progressThumb = document.getElementById('progress-thumb');
 const progressTrack = document.getElementById('progress-track');
-const timeCurrent = document.getElementById('time-current');
-const timeTotal   = document.getElementById('time-total');
-const stopDots    = document.getElementById('stop-dots');
-const locateBtn   = document.getElementById('locate-btn');
-const stopInfo    = document.querySelector('.stop-info');
+const timeCurrent   = document.getElementById('time-current');
+const timeTotal     = document.getElementById('time-total');
+const stopDots      = document.getElementById('stop-dots');
+const locateBtn     = document.getElementById('locate-btn');
+const satelliteBtn  = document.getElementById('satellite-btn');
+const audioRow      = document.getElementById('audio-row');
+const stopInfo      = document.querySelector('.stop-info');
 
 /* ── Google Maps Init ───────────────────────────────────── */
 function initMap() {
-  const uclaCenter = { lat: 34.0722, lng: -118.4431 };
-
   map = new google.maps.Map(document.getElementById('map'), {
-    center: uclaCenter,
+    center: { lat: 34.0722, lng: -118.4431 },
     zoom: 16,
     mapTypeId: 'roadmap',
     disableDefaultUI: true,
     gestureHandling: 'greedy',
-    styles: mapStyles()
+    styles: [
+      { featureType: 'poi.business', elementType: 'labels', stylers: [{ visibility: 'off' }] }
+    ]
   });
 
-  // Create markers for each stop
+  // Build a marker overlay for each stop
   STOPS.forEach((stop, i) => {
-    const markerEl = document.createElement('div');
-    markerEl.className = 'map-marker' + (i === 0 ? ' active' : '');
-    markerEl.textContent = stop.id;
+    const el = document.createElement('div');
+    el.className = 'map-marker';
+    el.textContent = stop.id;
 
-    const overlay = new google.maps.OverlayView();
-    overlay.onAdd = function() {
-      this.getPanes().overlayMouseTarget.appendChild(markerEl);
+    const ov = new google.maps.OverlayView();
+    ov.onAdd = function () {
+      this.getPanes().overlayMouseTarget.appendChild(el);
     };
-    overlay.draw = function() {
+    ov.draw = function () {
       const proj = this.getProjection();
-      const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(stop.lat, stop.lng));
-      const size = i === currentStop ? 23 : 18;
-      markerEl.style.left = (pos.x - size) + 'px';
-      markerEl.style.top  = (pos.y - size) + 'px';
-      markerEl.style.position = 'absolute';
+      if (!proj) return;
+      const pt   = proj.fromLatLngToDivPixel(new google.maps.LatLng(stop.lat, stop.lng));
+      const half = el.classList.contains('active') ? 23 : 18;
+      el.style.position = 'absolute';
+      el.style.left     = (pt.x - half) + 'px';
+      el.style.top      = (pt.y - half) + 'px';
     };
-    overlay.onRemove = function() {
-      if (markerEl.parentNode) markerEl.parentNode.removeChild(markerEl);
+    ov.onRemove = function () {
+      if (el.parentNode) el.parentNode.removeChild(el);
     };
 
-    markerEl.addEventListener('click', () => goToStop(i));
+    el.addEventListener('click', () => {
+      if (currentStop === -1) return; // don't navigate from intro by tapping map
+      goToStop(i);
+    });
 
-    overlay.setMap(map);
-    markers.push({ overlay, el: markerEl });
+    ov.setMap(map);
+    markers.push({ ov, el });
   });
 
   buildDots();
-  goToStop(-1, false);
-
-  // Call watchPosition directly — this triggers the browser permission prompt on load
+  renderIntro();
   startGeolocation();
 }
 
-/* ── Navigation ─────────────────────────────────────────── */
-// currentStop = -1 means the intro "0/8" screen
-function goToStop(index, animate = true) {
-  if (index < -1 || index >= STOPS.length) return;
+/* ── Render intro (stop 0/8) ────────────────────────────── */
+function renderIntro() {
+  currentStop = -1;
 
+  // All markers unvisited/inactive
+  markers.forEach(m => {
+    m.el.className = 'map-marker';
+    m.ov.draw();
+  });
+
+  stopNum.textContent   = '0';
+  stopTitle.textContent = 'Welcome to UCLA';
+  stopDesc.textContent  = 'Tap the arrow to start your self-guided tour of 8 campus landmarks.';
+
+  // Hide audio row and play button
+  audioRow.classList.add('hidden');
+  playBtn.classList.add('hidden');
+
+  // Button states
+  prevBtn.disabled = true;
+  nextBtn.disabled = false;
+
+  // Reset progress
+  progressFill.style.width  = '0%';
+  progressThumb.style.left  = '0%';
+  timeCurrent.textContent   = '0:00';
+  timeTotal.textContent     = '0:00';
+
+  updateDots();
+}
+
+/* ── Go to a real tour stop (0-indexed) ─────────────────── */
+function goToStop(index, animate = true) {
+  if (index < 0 || index > STOPS.length - 1) return;
+
+  // Stop any playing audio
   audio.pause();
   setPlayState(false);
 
   currentStop = index;
+  const stop  = STOPS[index];
 
-  if (index === -1) {
-    // Intro screen — no audio, no active pin
-    markers.forEach(m => {
-      m.el.className = 'map-marker';
-      m.overlay.draw();
-    });
-    stopTitle.textContent = 'Welcome to UCLA';
-    stopDesc.textContent  = 'Tap the arrow to begin your self-guided tour of 8 campus landmarks.';
-    stopNum.textContent   = '0';
-    progressFill.style.width = '0%';
-    progressThumb.style.left  = '0%';
-    timeCurrent.textContent  = '0:00';
-    timeTotal.textContent    = '0:00';
-    // Hide play button and seek bar on intro
-    document.getElementById('bottom-bar').classList.add('intro-mode');
-    prevBtn.disabled = true;
-    nextBtn.disabled = false;
-    updateDots();
-    return;
-  }
+  // Show audio row and play button
+  audioRow.classList.remove('hidden');
+  playBtn.classList.remove('hidden');
 
-  // Normal stop
-  document.getElementById('bottom-bar').classList.remove('intro-mode');
-
-  // Update marker styles
+  // Marker styles
   markers.forEach((m, i) => {
     m.el.className = 'map-marker';
     if (i < index)  m.el.className += ' visited';
     if (i === index) m.el.className += ' active';
-    m.overlay.draw();
+    m.ov.draw();
   });
 
-  const stop = STOPS[index];
-
+  // Animate title
   if (animate) {
     stopInfo.classList.remove('animating');
     void stopInfo.offsetWidth;
     stopInfo.classList.add('animating');
   }
 
+  stopNum.textContent   = stop.id;
   stopTitle.textContent = stop.title;
   stopDesc.textContent  = stop.description;
-  stopNum.textContent   = stop.id;
 
-  // Load audio — by the time we reach stop 0 the user has tapped next (user gesture done)
+  // Load audio — safe because the user had to tap a button to get here
   audio.src = stop.audio;
   audio.load();
-  progressFill.style.width = '0%';
+  progressFill.style.width  = '0%';
   progressThumb.style.left  = '0%';
-  timeCurrent.textContent  = '0:00';
-  timeTotal.textContent    = '0:00';
+  timeCurrent.textContent   = '0:00';
+  timeTotal.textContent     = '0:00';
 
   map.panTo({ lat: stop.lat, lng: stop.lng });
   updateDots();
@@ -211,10 +221,23 @@ function goToStop(index, animate = true) {
 }
 
 /* ── Prev / Next ────────────────────────────────────────── */
-prevBtn.addEventListener('click', () => goToStop(currentStop - 1));
-nextBtn.addEventListener('click', () => goToStop(currentStop + 1));
+prevBtn.addEventListener('click', () => {
+  if (currentStop === 0) {
+    renderIntro();
+  } else {
+    goToStop(currentStop - 1);
+  }
+});
 
-/* ── Audio Controls ─────────────────────────────────────── */
+nextBtn.addEventListener('click', () => {
+  if (currentStop === -1) {
+    goToStop(0);           // first real interaction — browser unlocks audio here
+  } else {
+    goToStop(currentStop + 1);
+  }
+});
+
+/* ── Play / Pause ───────────────────────────────────────── */
 playBtn.addEventListener('click', () => {
   if (audio.paused) {
     audio.play().catch(() => {});
@@ -230,12 +253,13 @@ function setPlayState(playing) {
   pauseIcon.style.display = playing ? 'block' : 'none';
 }
 
+/* ── Audio events ───────────────────────────────────────── */
 audio.addEventListener('timeupdate', () => {
   if (isDragging || !audio.duration) return;
   const pct = (audio.currentTime / audio.duration) * 100;
-  progressFill.style.width = pct + '%';
+  progressFill.style.width  = pct + '%';
   progressThumb.style.left  = pct + '%';
-  timeCurrent.textContent  = formatTime(audio.currentTime);
+  timeCurrent.textContent   = formatTime(audio.currentTime);
 });
 
 audio.addEventListener('loadedmetadata', () => {
@@ -244,47 +268,45 @@ audio.addEventListener('loadedmetadata', () => {
 
 audio.addEventListener('ended', () => {
   setPlayState(false);
-  progressFill.style.width = '100%';
+  progressFill.style.width  = '100%';
   progressThumb.style.left  = '100%';
-
-  // Auto-advance to next stop after 1.5s
+  // Auto-advance after 1.5 s if not on last stop
   if (currentStop < STOPS.length - 1) {
     setTimeout(() => goToStop(currentStop + 1), 1500);
   }
 });
 
-/* ── Seek Bar ───────────────────────────────────────────── */
+/* ── Seek bar ───────────────────────────────────────────── */
 function seek(e) {
   const rect = progressTrack.getBoundingClientRect();
-  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  const pct = Math.max(0, Math.min(1, x / rect.width));
+  const x    = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const pct  = Math.max(0, Math.min(1, x / rect.width));
   if (audio.duration) {
-    audio.currentTime = pct * audio.duration;
-    progressFill.style.width = (pct * 100) + '%';
-    progressThumb.style.left  = (pct * 100) + '%';
-    timeCurrent.textContent  = formatTime(audio.currentTime);
+    audio.currentTime           = pct * audio.duration;
+    progressFill.style.width    = (pct * 100) + '%';
+    progressThumb.style.left    = (pct * 100) + '%';
+    timeCurrent.textContent     = formatTime(audio.currentTime);
   }
 }
 
-progressTrack.addEventListener('mousedown', e => { isDragging = true; seek(e); });
+progressTrack.addEventListener('mousedown',  e => { isDragging = true; seek(e); });
 progressTrack.addEventListener('touchstart', e => { isDragging = true; seek(e); }, { passive: true });
-document.addEventListener('mousemove', e => { if (isDragging) seek(e); });
-document.addEventListener('touchmove', e => { if (isDragging) seek(e); }, { passive: true });
-document.addEventListener('mouseup', () => { isDragging = false; });
-document.addEventListener('touchend', () => { isDragging = false; });
+document.addEventListener('mousemove',  e => { if (isDragging) seek(e); });
+document.addEventListener('touchmove',  e => { if (isDragging) seek(e); }, { passive: true });
+document.addEventListener('mouseup',   () => { isDragging = false; });
+document.addEventListener('touchend',  () => { isDragging = false; });
 
-/* ── Prev / Next ────────────────────────────────────────── */
-prevBtn.addEventListener('click', () => goToStop(currentStop - 1));
-nextBtn.addEventListener('click', () => goToStop(currentStop + 1));
-
-/* ── Stop Dots ──────────────────────────────────────────── */
+/* ── Stop dots ──────────────────────────────────────────── */
 function buildDots() {
   stopDots.innerHTML = '';
   STOPS.forEach((_, i) => {
     const dot = document.createElement('button');
     dot.className = 'dot';
     dot.setAttribute('aria-label', `Go to stop ${i + 1}`);
-    dot.addEventListener('click', () => goToStop(i));
+    dot.addEventListener('click', () => {
+      if (currentStop === -1) goToStop(i);
+      else goToStop(i);
+    });
     stopDots.appendChild(dot);
   });
 }
@@ -293,16 +315,13 @@ function updateDots() {
   const dots = stopDots.querySelectorAll('.dot');
   dots.forEach((dot, i) => {
     dot.className = 'dot';
-    if (currentStop === -1) return; // all unvisited on intro
+    if (currentStop === -1) return;
     if (i < currentStop)   dot.classList.add('visited');
     if (i === currentStop) dot.classList.add('active');
   });
 }
 
-/* ── Geolocation ────────────────────────────────────────── */
-let userDotEl = null;
-let userOverlay = null;
-
+/* ── Geolocation (red dot) ──────────────────────────────── */
 function startGeolocation() {
   if (!navigator.geolocation) return;
 
@@ -311,25 +330,20 @@ function startGeolocation() {
 
     if (!userOverlay) {
       userDotEl = document.createElement('div');
-      userDotEl.style.cssText = `
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #E53935;
-        border: 3px solid #FFFFFF;
-        box-shadow: 0 2px 8px rgba(229,57,53,0.6);
-        position: absolute;
-        pointer-events: none;
-      `;
+      userDotEl.style.cssText = [
+        'width:18px', 'height:18px', 'border-radius:50%',
+        'background:#E53935', 'border:3px solid #fff',
+        'box-shadow:0 2px 8px rgba(229,57,53,0.6)',
+        'position:absolute', 'pointer-events:none'
+      ].join(';');
 
-      userOverlay = new google.maps.OverlayView();
-      userOverlay._latlng = latlng;
+      userOverlay          = new google.maps.OverlayView();
+      userOverlay._latlng  = latlng;
 
-      userOverlay.onAdd = function() {
-        // floatPane renders above all other map overlays including stop markers
+      userOverlay.onAdd = function () {
         this.getPanes().floatPane.appendChild(userDotEl);
       };
-      userOverlay.draw = function() {
+      userOverlay.draw = function () {
         const proj = this.getProjection();
         if (!proj) return;
         const pt = proj.fromLatLngToDivPixel(this._latlng);
@@ -337,7 +351,7 @@ function startGeolocation() {
         userDotEl.style.left = (pt.x - 9) + 'px';
         userDotEl.style.top  = (pt.y - 9) + 'px';
       };
-      userOverlay.onRemove = function() {
+      userOverlay.onRemove = function () {
         if (userDotEl && userDotEl.parentNode) userDotEl.parentNode.removeChild(userDotEl);
       };
       userOverlay.setMap(map);
@@ -346,7 +360,7 @@ function startGeolocation() {
       userOverlay.draw();
     }
   }, err => {
-    console.log('Watch position error:', err.message);
+    console.log('Geolocation error:', err.message);
   }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
 }
 
@@ -358,9 +372,7 @@ locateBtn.addEventListener('click', () => {
   });
 });
 
-/* ── Satellite Toggle ───────────────────────────────────── */
-let isSatellite = false;
-const satelliteBtn = document.getElementById('satellite-btn');
+/* ── Satellite toggle ───────────────────────────────────── */
 satelliteBtn.addEventListener('click', () => {
   isSatellite = !isSatellite;
   map.setMapTypeId(isSatellite ? 'hybrid' : 'roadmap');
@@ -373,12 +385,4 @@ function formatTime(secs) {
   const m = Math.floor(secs / 60);
   const s = Math.floor(secs % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
-}
-
-/* ── Map Styles (clean but full detail) ─────────────────── */
-function mapStyles() {
-  return [
-    { featureType: 'poi.business', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-    { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }
-  ];
 }

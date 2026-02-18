@@ -33,7 +33,6 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"/>
         <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
-        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" opacity="0.3"/>
       </svg>
     </button>
   </div>
@@ -41,31 +40,34 @@
   <!-- Stop Info Panel -->
   <div id="stop-panel">
     <div class="stop-counter">
-      <span id="current-stop-num">1</span>
+      <span id="current-stop-num">0</span>
       <span class="stop-sep">/</span>
       <span>8</span>
     </div>
     <div class="stop-info">
-      <h2 id="stop-title">Murphy Hall</h2>
-      <p id="stop-description" class="stop-desc"></p>
+      <h2 id="stop-title">Welcome to UCLA</h2>
+      <p id="stop-description" class="stop-desc">Tap the arrow to begin your self-guided tour of 8 campus landmarks.</p>
     </div>
   </div>
 
   <!-- Bottom Controls -->
   <div id="bottom-bar">
-    <!-- Progress / Seek -->
-    <div class="audio-progress-wrap">
-      <span class="time-label" id="time-current">0:00</span>
-      <div class="progress-track" id="progress-track">
-        <div class="progress-fill" id="progress-fill"></div>
-        <div class="progress-thumb" id="progress-thumb"></div>
+
+    <!-- Audio row — hidden on intro -->
+    <div id="audio-row">
+      <div class="audio-progress-wrap">
+        <span class="time-label" id="time-current">0:00</span>
+        <div class="progress-track" id="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+          <div class="progress-thumb" id="progress-thumb"></div>
+        </div>
+        <span class="time-label" id="time-total">0:00</span>
       </div>
-      <span class="time-label" id="time-total">0:00</span>
     </div>
 
     <!-- Controls Row -->
     <div class="controls-row">
-      <button class="nav-btn" id="prev-btn" title="Previous stop">
+      <button class="nav-btn" id="prev-btn" disabled>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
@@ -81,7 +83,7 @@
         </svg>
       </button>
 
-      <button class="nav-btn" id="next-btn" title="Next stop">
+      <button class="nav-btn" id="next-btn">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="9 18 15 12 9 6"/>
         </svg>
@@ -96,7 +98,7 @@
   <audio id="tour-audio"></audio>
 
   <!-- Google Maps API — replace YOUR_API_KEY with your actual key -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAaS6kYRw_Zlgue3h62hhqDvTCMlLYrCEY&callback=initMap" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
   <script src="app.js"></script>
 </body>
 </html>
