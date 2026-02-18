@@ -456,3 +456,22 @@ html, body {
   background: var(--blue-dark);
   transform: scale(0.97);
 }
+
+/* ── Intro Mode (stop 0) ───────────────────────────────── */
+#bottom-bar.intro-mode .audio-progress-wrap,
+#bottom-bar.intro-mode .play-btn {
+  display: none;
+}
+
+#bottom-bar.intro-mode .controls-row {
+  justify-content: space-between;
+  padding: 0 40px;
+}
+
+.intro-message {
+  font-size: 15px;
+  color: var(--gray-500);
+  text-align: center;
+  padding: 4px 0 2px;
+  font-style: italic;
+}

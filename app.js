@@ -135,18 +135,45 @@ function initMap() {
   });
 
   buildDots();
-  goToStop(0, false);
+  goToStop(-1, false);
 
   // Call watchPosition directly — this triggers the browser permission prompt on load
   startGeolocation();
 }
 
 /* ── Navigation ─────────────────────────────────────────── */
+// currentStop = -1 means the intro "0/8" screen
 function goToStop(index, animate = true) {
-  if (index < 0 || index >= STOPS.length) return;
+  if (index < -1 || index >= STOPS.length) return;
 
   audio.pause();
   setPlayState(false);
+
+  currentStop = index;
+
+  if (index === -1) {
+    // Intro screen — no audio, no active pin
+    markers.forEach(m => {
+      m.el.className = 'map-marker';
+      m.overlay.draw();
+    });
+    stopTitle.textContent = 'Welcome to UCLA';
+    stopDesc.textContent  = 'Tap the arrow to begin your self-guided tour of 8 campus landmarks.';
+    stopNum.textContent   = '0';
+    progressFill.style.width = '0%';
+    progressThumb.style.left  = '0%';
+    timeCurrent.textContent  = '0:00';
+    timeTotal.textContent    = '0:00';
+    // Hide play button and seek bar on intro
+    document.getElementById('bottom-bar').classList.add('intro-mode');
+    prevBtn.disabled = true;
+    nextBtn.disabled = false;
+    updateDots();
+    return;
+  }
+
+  // Normal stop
+  document.getElementById('bottom-bar').classList.remove('intro-mode');
 
   // Update marker styles
   markers.forEach((m, i) => {
@@ -156,13 +183,11 @@ function goToStop(index, animate = true) {
     m.overlay.draw();
   });
 
-  currentStop = index;
   const stop = STOPS[index];
 
-  // Animate title change
   if (animate) {
     stopInfo.classList.remove('animating');
-    void stopInfo.offsetWidth; // force reflow
+    void stopInfo.offsetWidth;
     stopInfo.classList.add('animating');
   }
 
@@ -170,65 +195,26 @@ function goToStop(index, animate = true) {
   stopDesc.textContent  = stop.description;
   stopNum.textContent   = stop.id;
 
-  // Only load audio after the user has tapped Start (browser requires interaction first)
-  if (tourStarted) {
-    audio.src = stop.audio;
-    audio.load();
-  }
+  // Load audio — by the time we reach stop 0 the user has tapped next (user gesture done)
+  audio.src = stop.audio;
+  audio.load();
   progressFill.style.width = '0%';
   progressThumb.style.left  = '0%';
   timeCurrent.textContent  = '0:00';
   timeTotal.textContent    = '0:00';
 
-  // Pan map
   map.panTo({ lat: stop.lat, lng: stop.lng });
-
-  // Update dots
   updateDots();
 
-  // Button states
-  prevBtn.disabled = (index === 0);
+  prevBtn.disabled = false;
   nextBtn.disabled = (index === STOPS.length - 1);
 }
 
-/* ── Start Screen ───────────────────────────────────────── */
-const startScreen = document.getElementById('start-screen');
-const startBtn    = document.getElementById('start-btn');
-let tourStarted   = false;
-
-startBtn.addEventListener('click', () => {
-  tourStarted = true;
-  audioUnlocked = true;
-
-  // Now that the user has interacted, load and immediately unlock the first stop's audio
-  audio.src = STOPS[currentStop].audio;
-  audio.load();
-  const unlock = audio.play();
-  if (unlock) unlock.then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
-
-  // Fade out and remove the start screen
-  startScreen.style.transition = 'opacity 0.3s ease';
-  startScreen.style.opacity = '0';
-  setTimeout(() => startScreen.classList.add('hidden'), 300);
-});
+/* ── Prev / Next ────────────────────────────────────────── */
+prevBtn.addEventListener('click', () => goToStop(currentStop - 1));
+nextBtn.addEventListener('click', () => goToStop(currentStop + 1));
 
 /* ── Audio Controls ─────────────────────────────────────── */
-
-// Fallback unlock on any tap (in case user interacts before pressing start)
-let audioUnlocked = false;
-function unlockAudio() {
-  if (audioUnlocked) return;
-  audioUnlocked = true;
-  // Play and immediately pause to satisfy the browser's interaction requirement
-  audio.load();
-  const unlock = audio.play();
-  if (unlock) unlock.then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
-  document.removeEventListener('touchstart', unlockAudio);
-  document.removeEventListener('mousedown', unlockAudio);
-}
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('mousedown', unlockAudio, { once: true });
-
 playBtn.addEventListener('click', () => {
   if (audio.paused) {
     audio.play().catch(() => {});
@@ -307,7 +293,8 @@ function updateDots() {
   const dots = stopDots.querySelectorAll('.dot');
   dots.forEach((dot, i) => {
     dot.className = 'dot';
-    if (i < currentStop)  dot.classList.add('visited');
+    if (currentStop === -1) return; // all unvisited on intro
+    if (i < currentStop)   dot.classList.add('visited');
     if (i === currentStop) dot.classList.add('active');
   });
 }
