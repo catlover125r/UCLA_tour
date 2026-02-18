@@ -190,6 +190,22 @@ function goToStop(index, animate = true) {
 }
 
 /* ── Audio Controls ─────────────────────────────────────── */
+
+// Unlock audio on first tap anywhere — fixes browser autoplay block on initial load
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  // Play and immediately pause to satisfy the browser's interaction requirement
+  audio.load();
+  const unlock = audio.play();
+  if (unlock) unlock.then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+  document.removeEventListener('touchstart', unlockAudio);
+  document.removeEventListener('mousedown', unlockAudio);
+}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('mousedown', unlockAudio, { once: true });
+
 playBtn.addEventListener('click', () => {
   if (audio.paused) {
     audio.play().catch(() => {});
@@ -274,28 +290,50 @@ function updateDots() {
 }
 
 /* ── Geolocation ────────────────────────────────────────── */
+let userDotEl = null;
+let userOverlay = null;
+
 function startGeolocation() {
   if (!navigator.geolocation) return;
 
   watchId = navigator.geolocation.watchPosition(pos => {
-    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    if (!userMarker) {
-      userMarker = new google.maps.Marker({
-        position: latlng,
-        map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 9,
-          fillColor: '#E53935',
-          fillOpacity: 1,
-          strokeColor: '#FFFFFF',
-          strokeWeight: 3
-        },
-        title: 'You are here',
-        zIndex: 999
-      });
+    const latlng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+
+    if (!userOverlay) {
+      // Build a red dot using OverlayView — same method as stop markers (reliable)
+      userDotEl = document.createElement('div');
+      userDotEl.style.cssText = `
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #E53935;
+        border: 3px solid #FFFFFF;
+        box-shadow: 0 2px 8px rgba(229,57,53,0.5);
+        position: absolute;
+        pointer-events: none;
+        z-index: 999;
+      `;
+
+      userOverlay = new google.maps.OverlayView();
+      userOverlay._latlng = latlng;
+
+      userOverlay.onAdd = function() {
+        this.getPanes().overlayMouseTarget.appendChild(userDotEl);
+      };
+      userOverlay.draw = function() {
+        const proj = this.getProjection();
+        if (!proj) return;
+        const pt = proj.fromLatLngToDivPixel(this._latlng);
+        userDotEl.style.left = (pt.x - 9) + 'px';
+        userDotEl.style.top  = (pt.y - 9) + 'px';
+      };
+      userOverlay.onRemove = function() {
+        if (userDotEl.parentNode) userDotEl.parentNode.removeChild(userDotEl);
+      };
+      userOverlay.setMap(map);
     } else {
-      userMarker.setPosition(latlng);
+      userOverlay._latlng = latlng;
+      userOverlay.draw();
     }
   }, err => {
     console.log('Watch position error:', err.message);
@@ -305,10 +343,18 @@ function startGeolocation() {
 locateBtn.addEventListener('click', () => {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos => {
-    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    map.panTo(latlng);
+    map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
     map.setZoom(17);
   });
+});
+
+/* ── Satellite Toggle ───────────────────────────────────── */
+let isSatellite = false;
+const satelliteBtn = document.getElementById('satellite-btn');
+satelliteBtn.addEventListener('click', () => {
+  isSatellite = !isSatellite;
+  map.setMapTypeId(isSatellite ? 'hybrid' : 'roadmap');
+  satelliteBtn.classList.toggle('active', isSatellite);
 });
 
 /* ── Utilities ──────────────────────────────────────────── */

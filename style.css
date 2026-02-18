@@ -102,6 +102,30 @@ html, body {
 }
 #locate-btn:active { transform: scale(0.94); }
 
+#satellite-btn {
+  position: absolute;
+  bottom: 68px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--white);
+  border: none;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-500);
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+  z-index: 10;
+}
+#satellite-btn:active { transform: scale(0.94); }
+#satellite-btn.active {
+  background: var(--blue);
+  color: var(--white);
+}
+
 /* ── Stop Panel ────────────────────────────────────────── */
 #stop-panel {
   position: fixed;
@@ -303,16 +327,16 @@ html, body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--white);
-  border: 3px solid var(--gray-300);
+  background: #E8F3FB;
+  border: 3px solid #7ABCE8;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: var(--gray-500);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  color: var(--blue);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -326,9 +350,9 @@ html, body {
   box-shadow: 0 4px 16px rgba(0,115,207,0.4);
 }
 .map-marker.visited {
-  background: var(--gray-100);
-  border-color: var(--gray-500);
-  color: var(--gray-500);
+  background: #D0E8F5;
+  border-color: #5AAAD8;
+  color: #3A85B8;
 }
 
 /* ── Animations ────────────────────────────────────────── */
