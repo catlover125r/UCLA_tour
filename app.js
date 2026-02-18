@@ -231,8 +231,8 @@ prevBtn.addEventListener('click', () => {
 
 nextBtn.addEventListener('click', () => {
   if (currentStop === -1) {
-    goToStop(0);           // first real interaction — browser unlocks audio here
-  } else {
+    goToStop(0);
+  } else if (currentStop < STOPS.length - 1) {
     goToStop(currentStop + 1);
   }
 });

@@ -54,7 +54,7 @@
   <div id="bottom-bar">
 
     <!-- Audio row — hidden on intro -->
-    <div id="audio-row">
+    <div id="audio-row" class="hidden">
       <div class="audio-progress-wrap">
         <span class="time-label" id="time-current">0:00</span>
         <div class="progress-track" id="progress-track">
@@ -73,7 +73,7 @@
         </svg>
       </button>
 
-      <button class="play-btn" id="play-btn">
+      <button class="play-btn hidden" id="play-btn">
         <svg id="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
           <polygon points="5,3 19,12 5,21"/>
         </svg>
@@ -98,7 +98,7 @@
   <audio id="tour-audio"></audio>
 
   <!-- Google Maps API — replace YOUR_API_KEY with your actual key -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAaS6kYRw_Zlgue3h62hhqDvTCMlLYrCEY&callback=initMap" async defer></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
   <script src="app.js"></script>
 </body>
 </html>
