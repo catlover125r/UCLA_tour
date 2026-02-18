@@ -170,9 +170,11 @@ function goToStop(index, animate = true) {
   stopDesc.textContent  = stop.description;
   stopNum.textContent   = stop.id;
 
-  // Load audio
-  audio.src = stop.audio;
-  audio.load();
+  // Only load audio after the user has tapped Start (browser requires interaction first)
+  if (tourStarted) {
+    audio.src = stop.audio;
+    audio.load();
+  }
   progressFill.style.width = '0%';
   progressThumb.style.left  = '0%';
   timeCurrent.textContent  = '0:00';
@@ -192,13 +194,17 @@ function goToStop(index, animate = true) {
 /* ── Start Screen ───────────────────────────────────────── */
 const startScreen = document.getElementById('start-screen');
 const startBtn    = document.getElementById('start-btn');
+let tourStarted   = false;
 
 startBtn.addEventListener('click', () => {
-  // This click is the user interaction that unlocks audio in the browser
+  tourStarted = true;
+  audioUnlocked = true;
+
+  // Now that the user has interacted, load and immediately unlock the first stop's audio
+  audio.src = STOPS[currentStop].audio;
   audio.load();
   const unlock = audio.play();
   if (unlock) unlock.then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
-  audioUnlocked = true;
 
   // Fade out and remove the start screen
   startScreen.style.transition = 'opacity 0.3s ease';
