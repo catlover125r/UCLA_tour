@@ -4,64 +4,64 @@ const STOPS = [
     id: 1,
     title: "Murphy Hall",
     description: "UCLA's main administration building. Home of the Admissions office and campus information kiosks.",
-    lat: 34.0722,
-    lng: -118.4418,
+    lat: 34.07201,
+    lng: -118.44155,
     audio: "audio/01.mp3"
   },
   {
     id: 2,
     title: "Royce Hall",
     description: "One of UCLA's four original buildings, built in 1929. A Romanesque landmark and world-class performing arts venue.",
-    lat: 34.0731,
-    lng: -118.4411,
+    lat: 34.07317,
+    lng: -118.44244,
     audio: "audio/02.mp3"
   },
   {
     id: 3,
     title: "Janss Steps",
     description: "87 steps connecting upper and lower campus. A beloved campus gathering spot with a sweeping view of Royce Hall.",
-    lat: 34.0726,
-    lng: -118.4405,
+    lat: 34.07236,
+    lng: -118.44197,
     audio: "audio/03.mp3"
   },
   {
     id: 4,
     title: "Sculpture Gardens",
     description: "Franklin D. Murphy Sculpture Garden. One of the finest outdoor sculpture collections in the western United States.",
-    lat: 34.0743,
-    lng: -118.4394,
+    lat: 34.07465,
+    lng: -118.44043,
     audio: "audio/04.mp3"
   },
   {
     id: 5,
     title: "Inverted Fountain",
     description: "Water flows down into the earth rather than up. It represents the university drawing knowledge from the world.",
-    lat: 34.0706,
-    lng: -118.4441,
+    lat: 34.07087,
+    lng: -118.44290,
     audio: "audio/05.mp3"
   },
   {
     id: 6,
     title: "Kerckhoff Hall",
     description: "The original student union building, home to the student government and the Kerckhoff Coffee House.",
-    lat: 34.0718,
-    lng: -118.4427,
+    lat: 34.07152,
+    lng: -118.44215,
     audio: "audio/06.mp3"
   },
   {
     id: 7,
     title: "Bruin Plaza",
     description: "The heart of student life on campus. Home of the iconic Bruin Bear statue, a symbol of UCLA pride.",
-    lat: 34.0714,
-    lng: -118.4432,
+    lat: 34.07112,
+    lng: -118.44370,
     audio: "audio/07.mp3"
   },
   {
     id: 8,
     title: "Pauley Pavilion",
     description: "UCLA's premier indoor arena, home to Bruin basketball and volleyball. Seats over 13,000 fans.",
-    lat: 34.0702,
-    lng: -118.4458,
+    lat: 34.07019,
+    lng: -118.44563,
     audio: "audio/08.mp3"
   }
 ];
@@ -136,6 +136,8 @@ function initMap() {
 
   buildDots();
   goToStop(0, false);
+
+  // Call watchPosition directly — this triggers the browser permission prompt on load
   startGeolocation();
 }
 
@@ -284,23 +286,28 @@ function startGeolocation() {
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 9,
-          fillColor: '#0073CF',
+          fillColor: '#E53935',
           fillOpacity: 1,
           strokeColor: '#FFFFFF',
           strokeWeight: 3
         },
-        title: 'You are here'
+        title: 'You are here',
+        zIndex: 999
       });
     } else {
       userMarker.setPosition(latlng);
     }
-  }, null, { enableHighAccuracy: true, maximumAge: 5000 });
+  }, err => {
+    console.log('Watch position error:', err.message);
+  }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 });
 }
 
 locateBtn.addEventListener('click', () => {
+  if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(pos => {
     const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     map.panTo(latlng);
+    map.setZoom(17);
   });
 });
 
@@ -312,19 +319,10 @@ function formatTime(secs) {
   return `${m}:${s}`;
 }
 
-/* ── Map Styles (light, minimal) ────────────────────────── */
+/* ── Map Styles (clean but full detail) ─────────────────── */
 function mapStyles() {
   return [
-    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-    { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-    { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-    { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f2' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c8d8e8' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ededed' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0e0e0' }] },
-    { featureType: 'building', elementType: 'geometry', stylers: [{ color: '#e8e4de' }] },
-    { featureType: 'park', elementType: 'geometry', stylers: [{ color: '#d4e8c2' }] },
-    { featureType: 'administrative', elementType: 'labels.text.fill', stylers: [{ color: '#555555' }] }
+    { featureType: 'poi.business', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }
   ];
 }
