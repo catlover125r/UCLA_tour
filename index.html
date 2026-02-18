@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>UCLA Campus Tour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="ucla-wordmark">UCLA</div>
+      <div class="tour-label">Self-Guided Campus Tour</div>
+    </div>
+  </header>
+
+  <!-- Map Container -->
+  <div id="map-container">
+    <div id="map"></div>
+    <button id="locate-btn" title="Show my location">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" opacity="0.3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Stop Info Panel -->
+  <div id="stop-panel">
+    <div class="stop-counter">
+      <span id="current-stop-num">1</span>
+      <span class="stop-sep">/</span>
+      <span>8</span>
+    </div>
+    <div class="stop-info">
+      <h2 id="stop-title">Murphy Hall</h2>
+      <p id="stop-description" class="stop-desc"></p>
+    </div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <div id="bottom-bar">
+    <!-- Progress / Seek -->
+    <div class="audio-progress-wrap">
+      <span class="time-label" id="time-current">0:00</span>
+      <div class="progress-track" id="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-thumb" id="progress-thumb"></div>
+      </div>
+      <span class="time-label" id="time-total">0:00</span>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="controls-row">
+      <button class="nav-btn" id="prev-btn" title="Previous stop">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+
+      <button class="play-btn" id="play-btn">
+        <svg id="play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+        <svg id="pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+      </button>
+
+      <button class="nav-btn" id="next-btn" title="Next stop">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Stop Dots -->
+    <div class="stop-dots" id="stop-dots"></div>
+  </div>
+
+  <!-- Audio element -->
+  <audio id="tour-audio"></audio>
+
+  <!-- Google Maps API — replace YOUR_API_KEY with your actual key -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
+  <script src="app.js"></script>
+</body>
+</html>

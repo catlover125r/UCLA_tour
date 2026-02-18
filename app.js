@@ -1,0 +1,330 @@
+/* ── Tour Data ──────────────────────────────────────────── */
+const STOPS = [
+  {
+    id: 1,
+    title: "Murphy Hall",
+    description: "UCLA's main administration building. Home of the Admissions office and campus information kiosks.",
+    lat: 34.0722,
+    lng: -118.4418,
+    audio: "audio/01.mp3"
+  },
+  {
+    id: 2,
+    title: "Royce Hall",
+    description: "One of UCLA's four original buildings, built in 1929. A Romanesque landmark and world-class performing arts venue.",
+    lat: 34.0731,
+    lng: -118.4411,
+    audio: "audio/02.mp3"
+  },
+  {
+    id: 3,
+    title: "Janss Steps",
+    description: "87 steps connecting upper and lower campus. A beloved campus gathering spot with a sweeping view of Royce Hall.",
+    lat: 34.0726,
+    lng: -118.4405,
+    audio: "audio/03.mp3"
+  },
+  {
+    id: 4,
+    title: "Sculpture Gardens",
+    description: "Franklin D. Murphy Sculpture Garden. One of the finest outdoor sculpture collections in the western United States.",
+    lat: 34.0743,
+    lng: -118.4394,
+    audio: "audio/04.mp3"
+  },
+  {
+    id: 5,
+    title: "Inverted Fountain",
+    description: "Water flows down into the earth rather than up. It represents the university drawing knowledge from the world.",
+    lat: 34.0706,
+    lng: -118.4441,
+    audio: "audio/05.mp3"
+  },
+  {
+    id: 6,
+    title: "Kerckhoff Hall",
+    description: "The original student union building, home to the student government and the Kerckhoff Coffee House.",
+    lat: 34.0718,
+    lng: -118.4427,
+    audio: "audio/06.mp3"
+  },
+  {
+    id: 7,
+    title: "Bruin Plaza",
+    description: "The heart of student life on campus. Home of the iconic Bruin Bear statue, a symbol of UCLA pride.",
+    lat: 34.0714,
+    lng: -118.4432,
+    audio: "audio/07.mp3"
+  },
+  {
+    id: 8,
+    title: "Pauley Pavilion",
+    description: "UCLA's premier indoor arena, home to Bruin basketball and volleyball. Seats over 13,000 fans.",
+    lat: 34.0702,
+    lng: -118.4458,
+    audio: "audio/08.mp3"
+  }
+];
+
+/* ── State ──────────────────────────────────────────────── */
+let currentStop = 0;
+let map = null;
+let markers = [];
+let userMarker = null;
+let watchId = null;
+let isDragging = false;
+
+/* ── DOM refs ───────────────────────────────────────────── */
+const audio       = document.getElementById('tour-audio');
+const playBtn     = document.getElementById('play-btn');
+const playIcon    = document.getElementById('play-icon');
+const pauseIcon   = document.getElementById('pause-icon');
+const prevBtn     = document.getElementById('prev-btn');
+const nextBtn     = document.getElementById('next-btn');
+const stopTitle   = document.getElementById('stop-title');
+const stopDesc    = document.getElementById('stop-description');
+const stopNum     = document.getElementById('current-stop-num');
+const progressFill  = document.getElementById('progress-fill');
+const progressThumb = document.getElementById('progress-thumb');
+const progressTrack = document.getElementById('progress-track');
+const timeCurrent = document.getElementById('time-current');
+const timeTotal   = document.getElementById('time-total');
+const stopDots    = document.getElementById('stop-dots');
+const locateBtn   = document.getElementById('locate-btn');
+const stopInfo    = document.querySelector('.stop-info');
+
+/* ── Google Maps Init ───────────────────────────────────── */
+function initMap() {
+  const uclaCenter = { lat: 34.0722, lng: -118.4431 };
+
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: uclaCenter,
+    zoom: 16,
+    mapTypeId: 'roadmap',
+    disableDefaultUI: true,
+    gestureHandling: 'greedy',
+    styles: mapStyles()
+  });
+
+  // Create markers for each stop
+  STOPS.forEach((stop, i) => {
+    const markerEl = document.createElement('div');
+    markerEl.className = 'map-marker' + (i === 0 ? ' active' : '');
+    markerEl.textContent = stop.id;
+
+    const overlay = new google.maps.OverlayView();
+    overlay.onAdd = function() {
+      this.getPanes().overlayMouseTarget.appendChild(markerEl);
+    };
+    overlay.draw = function() {
+      const proj = this.getProjection();
+      const pos = proj.fromLatLngToDivPixel(new google.maps.LatLng(stop.lat, stop.lng));
+      const size = i === currentStop ? 23 : 18;
+      markerEl.style.left = (pos.x - size) + 'px';
+      markerEl.style.top  = (pos.y - size) + 'px';
+      markerEl.style.position = 'absolute';
+    };
+    overlay.onRemove = function() {
+      if (markerEl.parentNode) markerEl.parentNode.removeChild(markerEl);
+    };
+
+    markerEl.addEventListener('click', () => goToStop(i));
+
+    overlay.setMap(map);
+    markers.push({ overlay, el: markerEl });
+  });
+
+  buildDots();
+  goToStop(0, false);
+  startGeolocation();
+}
+
+/* ── Navigation ─────────────────────────────────────────── */
+function goToStop(index, animate = true) {
+  if (index < 0 || index >= STOPS.length) return;
+
+  audio.pause();
+  setPlayState(false);
+
+  // Update marker styles
+  markers.forEach((m, i) => {
+    m.el.className = 'map-marker';
+    if (i < index)  m.el.className += ' visited';
+    if (i === index) m.el.className += ' active';
+    m.overlay.draw();
+  });
+
+  currentStop = index;
+  const stop = STOPS[index];
+
+  // Animate title change
+  if (animate) {
+    stopInfo.classList.remove('animating');
+    void stopInfo.offsetWidth; // force reflow
+    stopInfo.classList.add('animating');
+  }
+
+  stopTitle.textContent = stop.title;
+  stopDesc.textContent  = stop.description;
+  stopNum.textContent   = stop.id;
+
+  // Load audio
+  audio.src = stop.audio;
+  audio.load();
+  progressFill.style.width = '0%';
+  progressThumb.style.left  = '0%';
+  timeCurrent.textContent  = '0:00';
+  timeTotal.textContent    = '0:00';
+
+  // Pan map
+  map.panTo({ lat: stop.lat, lng: stop.lng });
+
+  // Update dots
+  updateDots();
+
+  // Button states
+  prevBtn.disabled = (index === 0);
+  nextBtn.disabled = (index === STOPS.length - 1);
+}
+
+/* ── Audio Controls ─────────────────────────────────────── */
+playBtn.addEventListener('click', () => {
+  if (audio.paused) {
+    audio.play().catch(() => {});
+    setPlayState(true);
+  } else {
+    audio.pause();
+    setPlayState(false);
+  }
+});
+
+function setPlayState(playing) {
+  playIcon.style.display  = playing ? 'none'  : 'block';
+  pauseIcon.style.display = playing ? 'block' : 'none';
+}
+
+audio.addEventListener('timeupdate', () => {
+  if (isDragging || !audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  progressFill.style.width = pct + '%';
+  progressThumb.style.left  = pct + '%';
+  timeCurrent.textContent  = formatTime(audio.currentTime);
+});
+
+audio.addEventListener('loadedmetadata', () => {
+  timeTotal.textContent = formatTime(audio.duration);
+});
+
+audio.addEventListener('ended', () => {
+  setPlayState(false);
+  progressFill.style.width = '100%';
+  progressThumb.style.left  = '100%';
+
+  // Auto-advance to next stop after 1.5s
+  if (currentStop < STOPS.length - 1) {
+    setTimeout(() => goToStop(currentStop + 1), 1500);
+  }
+});
+
+/* ── Seek Bar ───────────────────────────────────────────── */
+function seek(e) {
+  const rect = progressTrack.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const pct = Math.max(0, Math.min(1, x / rect.width));
+  if (audio.duration) {
+    audio.currentTime = pct * audio.duration;
+    progressFill.style.width = (pct * 100) + '%';
+    progressThumb.style.left  = (pct * 100) + '%';
+    timeCurrent.textContent  = formatTime(audio.currentTime);
+  }
+}
+
+progressTrack.addEventListener('mousedown', e => { isDragging = true; seek(e); });
+progressTrack.addEventListener('touchstart', e => { isDragging = true; seek(e); }, { passive: true });
+document.addEventListener('mousemove', e => { if (isDragging) seek(e); });
+document.addEventListener('touchmove', e => { if (isDragging) seek(e); }, { passive: true });
+document.addEventListener('mouseup', () => { isDragging = false; });
+document.addEventListener('touchend', () => { isDragging = false; });
+
+/* ── Prev / Next ────────────────────────────────────────── */
+prevBtn.addEventListener('click', () => goToStop(currentStop - 1));
+nextBtn.addEventListener('click', () => goToStop(currentStop + 1));
+
+/* ── Stop Dots ──────────────────────────────────────────── */
+function buildDots() {
+  stopDots.innerHTML = '';
+  STOPS.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'dot';
+    dot.setAttribute('aria-label', `Go to stop ${i + 1}`);
+    dot.addEventListener('click', () => goToStop(i));
+    stopDots.appendChild(dot);
+  });
+}
+
+function updateDots() {
+  const dots = stopDots.querySelectorAll('.dot');
+  dots.forEach((dot, i) => {
+    dot.className = 'dot';
+    if (i < currentStop)  dot.classList.add('visited');
+    if (i === currentStop) dot.classList.add('active');
+  });
+}
+
+/* ── Geolocation ────────────────────────────────────────── */
+function startGeolocation() {
+  if (!navigator.geolocation) return;
+
+  watchId = navigator.geolocation.watchPosition(pos => {
+    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    if (!userMarker) {
+      userMarker = new google.maps.Marker({
+        position: latlng,
+        map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#0073CF',
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 3
+        },
+        title: 'You are here'
+      });
+    } else {
+      userMarker.setPosition(latlng);
+    }
+  }, null, { enableHighAccuracy: true, maximumAge: 5000 });
+}
+
+locateBtn.addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(pos => {
+    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    map.panTo(latlng);
+  });
+});
+
+/* ── Utilities ──────────────────────────────────────────── */
+function formatTime(secs) {
+  if (isNaN(secs)) return '0:00';
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+/* ── Map Styles (light, minimal) ────────────────────────── */
+function mapStyles() {
+  return [
+    { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+    { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f2' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c8d8e8' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#ededed' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0e0e0' }] },
+    { featureType: 'building', elementType: 'geometry', stylers: [{ color: '#e8e4de' }] },
+    { featureType: 'park', elementType: 'geometry', stylers: [{ color: '#d4e8c2' }] },
+    { featureType: 'administrative', elementType: 'labels.text.fill', stylers: [{ color: '#555555' }] }
+  ];
+}
