@@ -189,9 +189,26 @@ function goToStop(index, animate = true) {
   nextBtn.disabled = (index === STOPS.length - 1);
 }
 
+/* ── Start Screen ───────────────────────────────────────── */
+const startScreen = document.getElementById('start-screen');
+const startBtn    = document.getElementById('start-btn');
+
+startBtn.addEventListener('click', () => {
+  // This click is the user interaction that unlocks audio in the browser
+  audio.load();
+  const unlock = audio.play();
+  if (unlock) unlock.then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+  audioUnlocked = true;
+
+  // Fade out and remove the start screen
+  startScreen.style.transition = 'opacity 0.3s ease';
+  startScreen.style.opacity = '0';
+  setTimeout(() => startScreen.classList.add('hidden'), 300);
+});
+
 /* ── Audio Controls ─────────────────────────────────────── */
 
-// Unlock audio on first tap anywhere — fixes browser autoplay block on initial load
+// Fallback unlock on any tap (in case user interacts before pressing start)
 let audioUnlocked = false;
 function unlockAudio() {
   if (audioUnlocked) return;
@@ -300,7 +317,6 @@ function startGeolocation() {
     const latlng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
 
     if (!userOverlay) {
-      // Build a red dot using OverlayView — same method as stop markers (reliable)
       userDotEl = document.createElement('div');
       userDotEl.style.cssText = `
         width: 18px;
@@ -308,27 +324,28 @@ function startGeolocation() {
         border-radius: 50%;
         background: #E53935;
         border: 3px solid #FFFFFF;
-        box-shadow: 0 2px 8px rgba(229,57,53,0.5);
+        box-shadow: 0 2px 8px rgba(229,57,53,0.6);
         position: absolute;
         pointer-events: none;
-        z-index: 999;
       `;
 
       userOverlay = new google.maps.OverlayView();
       userOverlay._latlng = latlng;
 
       userOverlay.onAdd = function() {
-        this.getPanes().overlayMouseTarget.appendChild(userDotEl);
+        // floatPane renders above all other map overlays including stop markers
+        this.getPanes().floatPane.appendChild(userDotEl);
       };
       userOverlay.draw = function() {
         const proj = this.getProjection();
         if (!proj) return;
         const pt = proj.fromLatLngToDivPixel(this._latlng);
+        if (!pt) return;
         userDotEl.style.left = (pt.x - 9) + 'px';
         userDotEl.style.top  = (pt.y - 9) + 'px';
       };
       userOverlay.onRemove = function() {
-        if (userDotEl.parentNode) userDotEl.parentNode.removeChild(userDotEl);
+        if (userDotEl && userDotEl.parentNode) userDotEl.parentNode.removeChild(userDotEl);
       };
       userOverlay.setMap(map);
     } else {
