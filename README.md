@@ -21,19 +21,3 @@ An **interactive, self-guided audio tour web app for UCLA's campus**, optimized 
 - HTML5 Audio API — narration playback
 - Google Fonts (DM Serif Display, DM Sans)
 
-## Setup
-
-1. Get a [Google Maps JavaScript API key](https://developers.google.com/maps/get-started)
-2. Add the key to the `<script>` tag in `index.html`:
-   ```html
-   <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap" async defer></script>
-   ```
-3. Place audio narration files in the `audio/` directory matching the paths defined in the `STOPS` array in `app.js`
-4. Open `index.html` in a browser or serve with a static file server
-
-## Running Locally
-
-```bash
-npx serve .
-```
-Then open [http://localhost:3000](http://localhost:3000) on your phone or browser.
